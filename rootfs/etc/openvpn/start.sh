@@ -54,4 +54,10 @@ if [ -n "${LOCAL_NETWORK-}" ]; then
   fi
 fi
 
+#Need to manually create tun device under Alpine Linux
+mkdir -p /dev/net
+if [ ! -c /dev/net/tun ]; then
+  mknod /dev/net/tun c 10 200
+fi
+
 exec openvpn $TRANSMISSION_CONTROL_OPTS $OPENVPN_OPTS --config "$OPENVPN_CONFIG"
