@@ -1,32 +1,14 @@
 # Transmission and OpenVPN
 #
-# Version 1.15
+# Version 1.21
 
-FROM ubuntu:14.04
+FROM alpine:edge
 MAINTAINER Kristian Haugene
 
 VOLUME /data
 VOLUME /config
 
-# Update packages and install software
-RUN apt-get update \
-    && apt-get -y install software-properties-common \
-    && add-apt-repository multiverse \
-    && add-apt-repository ppa:transmissionbt/ppa \
-    && apt-get update \
-    && apt-get install -y transmission-cli transmission-common transmission-daemon \
-    && apt-get install -y openvpn curl rar unrar zip unzip wget \
-    && curl -sLO https://github.com/Yelp/dumb-init/releases/download/v1.0.1/dumb-init_1.0.1_amd64.deb \
-    && dpkg -i dumb-init_*.deb \
-    && rm -rf dumb-init_*.deb \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && curl -L https://github.com/jwilder/dockerize/releases/download/v0.3.0/dockerize-linux-amd64-v0.3.0.tar.gz | tar -C /usr/local/bin -xzv \
-    && groupmod -g 1000 users \
-    && useradd -u 911 -U -d /config -s /bin/false abc \
-    && usermod -G users abc
-
-ADD openvpn/ /etc/openvpn/
-ADD transmission/ /etc/transmission/
+COPY rootfs /
 
 ENV OPENVPN_USERNAME=**None** \
     OPENVPN_PASSWORD=**None** \
@@ -103,8 +85,21 @@ ENV OPENVPN_USERNAME=**None** \
     "TRANSMISSION_WATCH_DIR=/data/watch" \
     "TRANSMISSION_WATCH_DIR_ENABLED=true" \
     "TRANSMISSION_HOME=/data/transmission-home" \
-    PUID=\
-    PGID=
+    PUID=991 \
+    PGID=991
+
+# Update packages and install software
+RUN addgroup -g $PGID transmission \
+    && adduser -h /config -s /bin/false -G transmission -D -u $PUID transmission \
+    && apk --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing/ add \
+    transmission-cli \
+    transmission-daemon \
+    dumb-init \
+    dockerize \
+    openvpn \
+    curl \
+    unzip \
+    sudo
 
 # Expose port and run
 EXPOSE 9091
